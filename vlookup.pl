@@ -33,9 +33,9 @@ my $line_no = 1;
 my $return_idx = $ARGV[1] - 1;
 
 my %email_map = (
-	personal => 8,
-	alternate => 9,
-	work => 10,
+	personal => 9,
+	alternate => 10,
+	work => 11,
 	other_1 => 13,
 	other_2 => 14,
 	other_3 => 15,
