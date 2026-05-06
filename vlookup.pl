@@ -1,15 +1,36 @@
 #!/usr/bin/env perl
+# TODO: add custom delimiter flag. Currently defaults to comma.
 
 use strict; use warnings;
 use open qw( :std :encoding(utf-8) );
 use Text::CSV;
+use Data::Dumper;
 
-# Currently a quick one-off script though may refactor to make a more generally useful script.
-# I specifically needed a quick and dirty script that would grep a file and return a max value.
+sub usage {
+	die "$0: need file to search and field to return as arguments.\n"
+}
+
+# Die without stdin
+die "Need to parse from stdin.\n" if -t STDIN;
+
+# TODO: ensure first argument is file and second is integer
+usage unless scalar @ARGV == 2;
+
+# Read lookup file into hash
+# TODO: utilize csv mthods to parse lookup file
+my $lookup_hash;
+open(my $fh, '<', $ARGV[0]) or die "Could not read '$ARGV[0]': $!\n";
+chomp(my @lines	= <$fh>);
+foreach my $line (@lines) {
+	my ($key, @arr) = split /,/, $line;
+	$lookup_hash->{$key} = \@arr;
+}
 
 my $csv = Text::CSV->new({binary=>1, keep_meta_info=>1});
 my $line_no = 1;
-my $grep = "/home/jasel/01_Data/02_Salesforce/duplicate-count.csv";
+
+# TODO: check if field exists
+my $return_idx = $ARGV[1] - 1;
 
 while (<stdin>) {
 	chomp(my $line = $_);
@@ -22,9 +43,6 @@ while (<stdin>) {
 	$csv->parse($line) or die "Encountered error on line $line_no of STDIN:\t<$line>\n$err_code\t$err_str\t$err_pos\n";
 	
 	my @all_fields = $csv->fields();
-	# warn "$line\n";
-	# warn scalar($csv->fields()) . "\n";
-	# warn @all_fields . "\n";
 
 	# Populate email hash with each email field
 	# Very verbose code currently. Need to refactor
@@ -36,23 +54,18 @@ while (<stdin>) {
 	$emails{"other_3"} = $all_fields[13] unless $all_fields[13] eq "";
 	$emails{"other_4"} = $all_fields[14] unless $all_fields[14] eq "";
 
-	# Need to refactor hardcoded filenames etc.
-	# warn "Grepping through $line_no\n";
 	foreach my $email (values %emails) {
-		$email =~ s/\\/\\\\\\\\/g;
-		$email =~ s/\./\\./g;
-		$email =~ s/\*/\\*/g;
-		chomp (my $record = `grep ",$email\$" $grep`);
-		my ($count, $result) = split /,/, $record;
+		# $email =~ s/\\/\\\\\\\\/g;
+		# $email =~ s/\./\\./g;
+		# $email =~ s/\*/\\*/g;
+		my $count = $lookup_hash->{$email}[$return_idx] if exists $lookup_hash->{$email}[$return_idx];
 
-		push @freq, $count;
+		push @freq, $count if defined $count;
 		# warn "\t$email -> $count\n";
 	}
 
 	@freq = sort {$b <=> $a} @freq;
 	my $max = shift @freq unless $#freq < 0;
-
-	# warn "\t\tMax: $max\n" if defined $max;
 
 	for (my $i = 0; $i < scalar(@all_fields); $i++) {
 		$all_fields[$i] = "\"$all_fields[$i]\"" if $csv->is_quoted($i);	
@@ -60,10 +73,7 @@ while (<stdin>) {
 		# warn "Printing field $i - $all_fields[$i],\n";
 	}
 
-	# warn $max ? "$max\n" : "0\n";
 	print $max ? "$max\n" : "0\n";
 
-
 	$line_no++;
-	
 }
