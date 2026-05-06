@@ -32,6 +32,16 @@ my $line_no = 1;
 # TODO: check if field exists
 my $return_idx = $ARGV[1] - 1;
 
+my %email_map = (
+	personal => 8,
+	alternate => 9,
+	work => 10,
+	other_1 => 13,
+	other_2 => 14,
+	other_3 => 15,
+	other_4 => 16
+);
+
 while (<stdin>) {
 	chomp(my $line = $_);
 
@@ -45,21 +55,12 @@ while (<stdin>) {
 	my @all_fields = $csv->fields();
 
 	# Populate email hash with each email field
-	# Very verbose code currently. Need to refactor
-	$emails{"personal"} = $all_fields[8] unless $all_fields[8] eq "";
-	$emails{"alternate"} = $all_fields[9] unless $all_fields[9] eq "";
-	$emails{"work"} = $all_fields[10] unless $all_fields[10] eq "";
-	$emails{"other_1"} = $all_fields[11] unless $all_fields[11] eq "";
-	$emails{"other_2"} = $all_fields[12] unless $all_fields[12] eq "";
-	$emails{"other_3"} = $all_fields[13] unless $all_fields[13] eq "";
-	$emails{"other_4"} = $all_fields[14] unless $all_fields[14] eq "";
+	while (my($key, $idx) = each(%email_map)) {
+		$emails{$key} = $all_fields[$idx] unless $all_fields[$idx] eq "";
+	}
 
 	foreach my $email (values %emails) {
-		# $email =~ s/\\/\\\\\\\\/g;
-		# $email =~ s/\./\\./g;
-		# $email =~ s/\*/\\*/g;
 		my $count = $lookup_hash->{$email}[$return_idx] if exists $lookup_hash->{$email}[$return_idx];
-
 		push @freq, $count if defined $count;
 		# warn "\t$email -> $count\n";
 	}
