@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+CONTACT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Record Count"
+
+CONTACT_ACCT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Record Count,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country"
+
+CONTACT_ACCT_AFF_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Record Count,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country,Affiliation Account ID,Affiliation ID,Primary,Role,Affiliation Name,Affiliation Type,Affiliation City,Affiliation Street,Affiliation State,Affiliation Zip,Affiliation Country"
+
+REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
+
+TIMEFORMAT=$'%Rs'
+PRINTFMT="%-80s"
+
+printf "$PRINTFMT" "Breaking up 'Other emails' field: "
+time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | vstack -d "," 14 $(seq -s " " 1 11) 13 |
+	paste -d "," - <( sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | 
+	vstack -d "," 12  | tail +2 | sed 's/"//g' | 
+	pad_commas "Other emails" ",") > "$REAL_PATH/.data/join-components/contact-join.csv")
+
+printf "$PRINTFMT" "Counting duplicates and saving to file: "
+time (vstack -u $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 $REAL_PATH/.data/join-components/contact-join.csv) | 
+	sort | uniq | sort -rn | tail +2 | sed "s/^ *//; s/ /,/" | vstack -d "," 2 1 > "$REAL_PATH/tmp" && 
+	cat <(echo "Unique Email,Number of Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/duplicate-count.csv")
+	
+printf "$PRINTFMT" "Appending duplicate information to list: "
+time ("$REAL_PATH/vlookup.pl" -m "$REAL_PATH/.data/duplicate-count.csv" 1 $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") > "$REAL_PATH/tmp" && 
+	paste -d "," - tmp < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") |
+	sort -t , -k 1,1 > "$REAL_PATH/.data/counted-contact.csv")
+
+printf "$PRINTFMT" "Join account info: "
+time (sub_newline "$REAL_PATH/.data/join-components/acct-join.src.csv" |
+	tail +2 | sort -t , -k 1,1 > "$REAL_PATH/.data/join-components/acct-join.csv" &&
+	join -t , -a 1 "$REAL_PATH/.data/counted-contact.csv" "$REAL_PATH/.data/join-components/acct-join.csv" |
+	sort -t , -k 2,2 > "$REAL_PATH/.data/counted-contact-acct.csv")
+
+printf "$PRINTFMT" "Join affiliation data with account info: "
+time (sub_newline "$REAL_PATH/.data/join-components/contact-affiliation.join.src.csv" | tail +2 | sort -t , -k 2,2 |
+	join -t , -1 2 - "$REAL_PATH/.data/join-components/acct-join.csv" > "$REAL_PATH/.data/join-components/contact-affiliation.join.csv")
+
+printf "$PRINTFMT" "Join affiliation data to contact list: "
+time (sort -t , -k 2,2 "$REAL_PATH/.data/join-components/contact-affiliation.join.csv" | 
+	join -t , -a 1 -j 2 "$REAL_PATH/.data/counted-contact-acct.csv" - |
+	vstack -s "," -d $'\t' | pad_commas "Other fields" $'\t' |
+	vstack -s $'\t' -d "," | tail +2 > "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
+
+printf "$PRINTFMT" "Adding appropriate headers: "
+time (cat <(echo "$CONTACT_HEADERS") "$REAL_PATH/.data/counted-contact.csv" > "$REAL_PATH/tmp" && 
+	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact.csv" &&
+	cat <(echo "$CONTACT_ACCT_HEADERS") "$REAL_PATH/.data/counted-contact-acct.csv" > "$REAL_PATH/tmp" && 
+	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact-acct.csv" &&
+	cat <(echo "$CONTACT_ACCT_AFF_HEADERS") "$REAL_PATH/.data/counted-contact-acct-affiliation.csv" > "$REAL_PATH/tmp" &&
+	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
