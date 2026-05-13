@@ -19,7 +19,7 @@ time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | v
 
 printf "$PRINTFMT" "Counting duplicates and saving to file: "
 time (vstack -u $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 $REAL_PATH/.data/join-components/contact-join.csv) | 
-	sort | uniq | sort -rn | tail +2 | sed "s/^ *//; s/ /,/" | vstack -d "," 2 1 > "$REAL_PATH/tmp" && 
+	sort | uniq -c | sort -rn | tail +2 | sed "s/^ *//; s/ /,/" | vstack -d "," 2 1 > "$REAL_PATH/tmp" && 
 	cat <(echo "Unique Email,Number of Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/duplicate-count.csv")
 	
 printf "$PRINTFMT" "Appending duplicate information to list: "

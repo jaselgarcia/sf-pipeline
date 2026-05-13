@@ -35,19 +35,18 @@ $line_no = 1;
 chomp (my $file = shift(@ARGV));
 $return_idx = shift(@ARGV) - 1;
 my $csv = Text::CSV->new ({
-		binary=>1, 
-		keep_meta_info=>1
+		binary		=> 1, 
+		keep_meta_info	=> 1,
+		sep		=> $delim
 	});
 
 # Read lookup file into hash
-# TODO: utilize csv mthods to parse lookup file
-# TODO: check if return field exists
-# TODO: implement custom delim
-open(my $fh, '<', $file) or die "Could not read '$file': $!\n";
-chomp(my @lines	= <$fh>);
-foreach my $line (@lines) {
-	my ($key, @arr) = split /,/, $line;
-	$lookup_hash->{$key} = \@arr;
+open(my $fh, '<:encoding(utf8)', $file) or die "Could not read '$file': $!\n";
+while (my $line = $csv->getline($fh)) {
+	my $key = shift @{$line};
+	$lookup_hash->{$key} = $line;
+	my $die = sprintf "Field %s doesn't exist on line %s of %s.\n", $return_idx + 1, $., $file;
+	die "$die" unless exists $lookup_hash->{$key}[$return_idx];
 }
 
 foreach my $arg (@ARGV) {
