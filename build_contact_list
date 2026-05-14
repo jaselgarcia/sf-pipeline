@@ -15,7 +15,7 @@ printf "$PRINTFMT" "Breaking up 'Other emails' field: "
 time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | vstack -d "," 14 $(seq -s " " 1 11) 13 |
 	paste -d "," - <( sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | 
 	vstack -d "," 12  | tail +2 | sed 's/"//g' | 
-	pad_commas "Other emails" ",") > "$REAL_PATH/.data/join-components/contact-join.csv")
+	pad_commas "Other emails") > "$REAL_PATH/.data/join-components/contact-join.csv")
 
 printf "$PRINTFMT" "Counting duplicates and saving to file: "
 time (vstack -u $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 $REAL_PATH/.data/join-components/contact-join.csv) | 
@@ -23,8 +23,8 @@ time (vstack -u $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 $REAL_PATH/.
 	cat <(echo "Unique Email,Number of Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/duplicate-count.csv")
 	
 printf "$PRINTFMT" "Appending duplicate information to list: "
-time ("$REAL_PATH/vlookup.pl" -m "$REAL_PATH/.data/duplicate-count.csv" 1 $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") > "$REAL_PATH/tmp" && 
-	paste -d "," - tmp < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") |
+time (vlookup -m "$REAL_PATH/.data/duplicate-count.csv" 1 $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") > "$REAL_PATH/tmp" && 
+	paste -d "," - "$REAL_PATH/tmp" < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") |
 	sort -t , -k 1,1 > "$REAL_PATH/.data/counted-contact.csv")
 
 printf "$PRINTFMT" "Join account info: "
@@ -40,10 +40,9 @@ time (sub_newline "$REAL_PATH/.data/join-components/contact-affiliation.join.src
 printf "$PRINTFMT" "Join affiliation data to contact list: "
 time (sort -t , -k 2,2 "$REAL_PATH/.data/join-components/contact-affiliation.join.csv" | 
 	join -t , -a 1 -j 2 "$REAL_PATH/.data/counted-contact-acct.csv" - |
-	vstack -s "," -d $'\t' | pad_commas "Other fields" $'\t' |
-	vstack -s $'\t' -d "," | tail +2 > "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
+	pad_commas > "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
 
-printf "$PRINTFMT" "Adding appropriate headers: "
+printf "$PRINTFMT" "Add appropriate headers: "
 time (cat <(echo "$CONTACT_HEADERS") "$REAL_PATH/.data/counted-contact.csv" > "$REAL_PATH/tmp" && 
 	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact.csv" &&
 	cat <(echo "$CONTACT_ACCT_HEADERS") "$REAL_PATH/.data/counted-contact-acct.csv" > "$REAL_PATH/tmp" && 
