@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-CONTACT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Record Count"
+CONTACT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Email Count,Name Count"
 
-CONTACT_ACCT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Record Count,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country"
+CONTACT_ACCT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Email Count,Name Account,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country"
 
-CONTACT_ACCT_AFF_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Record Count,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country,Affiliation Account ID,Affiliation ID,Primary,Role,Affiliation Name,Affiliation Type,Affiliation City,Affiliation Street,Affiliation State,Affiliation Zip,Affiliation Country"
+CONTACT_ACCT_AFF_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Email Count,Name Count,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country,Affiliation Account ID,Affiliation ID,Primary,Role,Affiliation Name,Affiliation Type,Affiliation City,Affiliation Street,Affiliation State,Affiliation Zip,Affiliation Country"
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 
@@ -17,20 +17,30 @@ time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | v
 	vstack -d "," 12  | tail +2 | sed 's/"//g' | 
 	pad_commas "Other emails") > "$REAL_PATH/.data/join-components/contact-join.csv")
 
-printf "$PRINTFMT" "Counting duplicates and saving to file: "
+printf "$PRINTFMT" "Counting duplicate emails and saving to file: "
 time (vstack -u $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 $REAL_PATH/.data/join-components/contact-join.csv) | 
 	sort | uniq -c | sort -rn | tail +2 | sed "s/^ *//; s/ /,/" | vstack -d "," 2 1 > "$REAL_PATH/tmp" && 
-	cat <(echo "Unique Email,Number of Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/duplicate-count.csv")
+	cat <(echo "Unique Email,Number of Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/duplicate-email.csv")
 	
-printf "$PRINTFMT" "Appending duplicate information to list: "
-time (vlookup -m "$REAL_PATH/.data/duplicate-count.csv" 1 $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") > "$REAL_PATH/tmp" && 
-	paste -d "," - "$REAL_PATH/tmp" < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") |
-	sort -t , -k 1,1 > "$REAL_PATH/.data/counted-contact.csv")
+printf "$PRINTFMT" "Counting duplicate names and saving to file: "
+time (vstack -d " " 6 8 < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") | 
+	sort | uniq -c | sort -rn | sed $'s/^ *//; s/"//g; s/,//g; s/ /\t/' | vstack -F $'\t' -d "," 2 1 > "$REAL_PATH/tmp" && 
+	cat <(echo "Unique Name,Number of Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/duplicate-name.csv")
+
+printf "$PRINTFMT" "Appending duplicate email information to list: "
+time (vlookup -m "$REAL_PATH/.data/duplicate-email.csv" 1 $(seq -s " " 10 12) $(seq -s " " 14 17) < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") > "$REAL_PATH/tmp" && 
+	paste -d "," - "$REAL_PATH/tmp" < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") > "$REAL_PATH/.data/counted-contact.1.csv")
+
+printf "$PRINTFMT" "Appending duplicate name information to list: "
+time (vlookup -m "$REAL_PATH/.data/duplicate-name.csv" 1 1 < <(vstack -d " " 6 8 < <(tail +2 "$REAL_PATH/.data/join-components/contact-join.csv") | 
+	sed 's/"//g; s/,//g') > "$REAL_PATH/tmp" && 
+	paste -d "," - "$REAL_PATH/tmp" < "$REAL_PATH/.data/counted-contact.1.csv" |
+	sort -t , -k 1,1 > "$REAL_PATH/.data/counted-contact.2.csv")
 
 printf "$PRINTFMT" "Join account info: "
 time (sub_newline "$REAL_PATH/.data/join-components/acct-join.src.csv" |
 	tail +2 | sort -t , -k 1,1 > "$REAL_PATH/.data/join-components/acct-join.csv" &&
-	join -t , -a 1 "$REAL_PATH/.data/counted-contact.csv" "$REAL_PATH/.data/join-components/acct-join.csv" |
+	join -t , -a 1 "$REAL_PATH/.data/counted-contact.2.csv" "$REAL_PATH/.data/join-components/acct-join.csv" |
 	sort -t , -k 2,2 > "$REAL_PATH/.data/counted-contact-acct.csv")
 
 printf "$PRINTFMT" "Join affiliation data with account info: "
@@ -43,7 +53,7 @@ time (sort -t , -k 2,2 "$REAL_PATH/.data/join-components/contact-affiliation.joi
 	pad_commas > "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
 
 printf "$PRINTFMT" "Add appropriate headers: "
-time (cat <(echo "$CONTACT_HEADERS") "$REAL_PATH/.data/counted-contact.csv" > "$REAL_PATH/tmp" && 
+time (cat <(echo "$CONTACT_HEADERS") "$REAL_PATH/.data/counted-contact.2.csv" > "$REAL_PATH/tmp" && 
 	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact.csv" &&
 	cat <(echo "$CONTACT_ACCT_HEADERS") "$REAL_PATH/.data/counted-contact-acct.csv" > "$REAL_PATH/tmp" && 
 	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact-acct.csv" &&
