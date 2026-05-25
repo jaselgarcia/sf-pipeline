@@ -1,0 +1,7 @@
+{
+
+	"operation": "query",
+	"query": "SELECT Id, Confirmation_of_receiving_updates__c, Newsletter__c, Salutation, FirstName, Middle_Name__c, LastName, Congregation__c, npe01__HomeEmail__c, npe01__AlternateEmail__c, npe01__WorkEmail__c, Other_emails__c, Phone, AccountId FROM Contact"
+
+}	
+

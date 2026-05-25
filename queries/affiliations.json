@@ -1,0 +1,7 @@
+{
+
+	"operation": "query",
+	"query": "SELECT npe5__Contact__r.Id, npe5__Organization__r.Account_ID__c, Id, npe5__Primary__c, npe5__Role__c FROM npe5__Affiliation__c"
+
+}	
+
