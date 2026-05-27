@@ -1,7 +1,0 @@
-{
-
-	"operation": "query",
-	"query": "Select Account_ID__c, Name, Type, BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry FROM Account"
-
-}	
-
