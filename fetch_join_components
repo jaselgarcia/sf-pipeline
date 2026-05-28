@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
+
+init_token() {
+	local SF_TOKEN=$(sf org display -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
+	sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
+}
+
+hrs_elapsed() {
+	local seconds_elapsed=$(( $2 - $1 ))
+	echo $(( seconds_elapsed / 3600 ))
+}
+
+# Refresh token if inactive for over two hours
+if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
+	init_token	
+fi
+
+source $REAL_PATH/.env
+
+declare -a job_stack
+declare -a job_state
+
+job_state=(
+	"JobComplete"
+	"InProgress"
+	"UploadComplete"
+	"Aborted"
+	"Failed"
+)
+
+# Loop over SOQL queries in queries dir, create jobs and push job ids to stack
+# for query in queries/*.soql; do
+	# printf "$PRINTFMT" "Creating query job with $query: " 
+	# time curr_id=$($REAL_PATH/create_query.pl $SF_TOKEN $query)
+	# job_stack+=$curr_id
+# done
+
+job_stack=(
+	"750Tw00000dk6lWIAQ"
+	"750Tw00000djy9fIAA"
+	"750Tw00000djtukIAA"
+)
+
+# Check each id in stack and test exit code to determine whether to download results
+# Unset job id after each successful download and continue loop until job id stack empty
+# Should only implement sleep after testing each job at least once.
+
+while true; do
+	limit=${#job_stack[@]}
+
+	for (( i=0; i < $limit; i++ )); do
+		printf "$PRINTFMT" "Checking job ${job_stack[$i]}: "
+		time name=$($REAL_PATH/check_status.pl $SF_TOKEN ${job_stack[$i]}) 
+		exit_code=$?
+
+		echo -e "\tJob state is ${job_state[$exit_code]}"  
+		if [ $exit_code -eq 0 ]; then
+			echo -e "\tDownloading $name query."
+			unset 'job_stack[i]'
+		fi
+	done
+
+	if [ ${#job_stack[@]} -eq 0 ]; then
+		break
+	fi
+
+	# Still jobs in the stack. Sleep before next check
+	sleep 3
+done
+
+echo "Broke out of loop."

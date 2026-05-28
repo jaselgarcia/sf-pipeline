@@ -15,7 +15,9 @@ my (
 	$curl,
 	$response_body,
 	$response_headers,
-	$status_code
+	$status_code,
+	@headers,
+	%options
 );
 
 sub usage {
@@ -28,7 +30,7 @@ usage unless (
 	-f $ARGV[1]
 );
 
-my @headers = (
+@headers = (
 	"Authorization: Bearer $ARGV[0]",
 	"Accept: application/json",
 	"Content-type: application/json",
@@ -51,7 +53,7 @@ $json_data = encode_json({
 });
 
 # Comma notation required to maintain module constants
-my %options = (
+%options = (
 	CURLOPT_URL, "${\BASE_URL}/services/data/v${\VERSION}/jobs/query",
 	CURLOPT_POST, 1,
 	CURLOPT_HTTPHEADER,  \@headers,
@@ -66,12 +68,20 @@ while (my ($key, $value) = each (%options)) {
 	$curl->setopt( $key, $value );
 }
 
-$status_code = $curl->perform();
+# Capture errors in $@
+eval { 
+	$curl->perform()
+};
 
-# Return JSON code upon successful curl
-if ($status_code == CURLE_OK) {
-	print "$result";
-	exit 0;
+# Return job id upon successful curl
+if ($@) {
+	die "Request error: $@\n";
 } else {
-	die "Request error: " . $curl->sterror($status_code) . "\n";
+	$status_code = $curl->getinfo( CURLINFO_HTTP_CODE ); 
+	if ($status_code >= 200 && $status_code < 300) {
+		printf "%s", decode_json($response_body)->{id};
+		exit 0;
+	} else {
+		die "$response_body\n";
+	}
 }

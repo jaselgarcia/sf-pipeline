@@ -8,8 +8,7 @@ CONTACT_ACCT_AFF_HEADERS="Account ID,Contact ID,Confirmation of receiving update
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 
-TIMEFORMAT=$'%Rs'
-PRINTFMT="%-80s"
+source $REAL_PATH/.env
 
 printf "$PRINTFMT" "Breaking up 'Other emails' field: "
 time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | vstack -d "," 14 $(seq -s " " 1 11) 13 |

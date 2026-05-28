@@ -9,5 +9,12 @@ It will build off of our inital work with forking out to curl via the URJ and IL
 
 [Salesforce API Reference](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_rest.htm)
 
+## Dependencies
+- perl-csv-tools
+- jq
+- libcurl
+- Net:Curl::Easy
+- Perl JSON module
+
 ## Scripts
 - ~~**add-duplicate-info:** *very* specific script for one work-realted use case. Would look to refactor into something more generally useful.~~
