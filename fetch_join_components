@@ -2,23 +2,6 @@
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 
-init_token() {
-	local SF_TOKEN=$(sf org display -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
-	sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
-}
-
-hrs_elapsed() {
-	local seconds_elapsed=$(( $2 - $1 ))
-	echo $(( seconds_elapsed / 3600 ))
-}
-
-# Refresh token if inactive for over two hours
-if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
-	init_token	
-fi
-
-source $REAL_PATH/.env
-
 declare -a job_stack
 declare -a job_state
 
@@ -29,6 +12,27 @@ job_state=(
 	"Aborted"
 	"Failed"
 )
+
+
+init_token() {
+	local SF_TOKEN=$(sf org display -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
+	sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
+}
+
+hrs_elapsed() {
+	local seconds_elapsed=$(( $2 - $1 ))
+	echo $(( seconds_elapsed / 3600 ))
+}
+
+
+# Refresh token if inactive for over two hours
+if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
+	source $REAL_PATH/.env
+	printf "$PRINTFMT" "API Token expired. Refreshing: "
+	time init_token	
+else
+	source $REAL_PATH/.env
+fi
 
 # Loop over SOQL queries in queries dir, create jobs and push job ids to stack
 # for query in queries/*.soql; do
@@ -44,9 +48,6 @@ job_stack=(
 )
 
 # Check each id in stack and test exit code to determine whether to download results
-# Unset job id after each successful download and continue loop until job id stack empty
-# Should only implement sleep after testing each job at least once.
-
 while true; do
 	limit=${#job_stack[@]}
 
@@ -57,8 +58,8 @@ while true; do
 
 		echo -e "\tJob state is ${job_state[$exit_code]}"  
 		if [ $exit_code -eq 0 ]; then
-			echo -e "\tDownloading $name query."
-			unset 'job_stack[i]'
+			printf "\t${PRINTFMT/$SPACING/$(( SPACING - 8 ))}" "Downloading $name query:"
+			time unset 'job_stack[i]'
 		fi
 	done
 
@@ -66,7 +67,8 @@ while true; do
 		break
 	fi
 
-	# Still jobs in the stack. Sleep before next check
+	# Still jobs in the stack. Remove empty indices and sleep before next check
+	temp_arr=( ${job_stack[@]} ) && job_stack=( ${temp_arr[@]} )
 	sleep 3
 done
 
