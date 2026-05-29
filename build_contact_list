@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
 
-CONTACT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Email Count,Name Count"
-
-CONTACT_ACCT_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Email Count,Name Account,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country"
-
-CONTACT_ACCT_AFF_HEADERS="Account ID,Contact ID,Confirmation of receiving updates,Newsletter,Salutation,First Name,Middle Name,Last Name,Congregation,Personal Email,Alternate Email,Work Email,Phone,Other emails 1,Other emails 2,Other emails 3,Other emails 4,Email Count,Name Count,Account Name,Type,Billing City,Billing Street,Billing State,Billing Zip,Billing Country,Affiliation Account ID,Affiliation ID,Primary,Role,Affiliation Name,Affiliation Type,Affiliation City,Affiliation Street,Affiliation State,Affiliation Zip,Affiliation Country"
-
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
-
-source $REAL_PATH/.env
+source $REAL_PATH/config
 
 printf "$PRINTFMT" "Breaking up 'Other emails' field: "
 time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | vstack -d "," 14 $(seq -s " " 1 11) 13 |

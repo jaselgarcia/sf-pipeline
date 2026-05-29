@@ -2,18 +2,6 @@
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 
-declare -a job_stack
-declare -a job_state
-
-job_state=(
-	"JobComplete"
-	"InProgress"
-	"UploadComplete"
-	"Aborted"
-	"Failed"
-)
-
-
 init_token() {
 	local SF_TOKEN=$(sf org display -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
 	sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
@@ -27,12 +15,22 @@ hrs_elapsed() {
 
 # Refresh token if inactive for over two hours
 if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
-	source $REAL_PATH/.env
 	printf "$PRINTFMT" "API Token expired. Refreshing: "
 	time init_token	
-else
-	source $REAL_PATH/.env
 fi
+
+source $REAL_PATH/.env
+source $REAL_PATH/config
+declare -a job_stack
+declare -a job_state
+job_state=(
+	"JobComplete"
+	"InProgress"
+	"UploadComplete"
+	"Aborted"
+	"Failed"
+)
+
 
 # Loop over SOQL queries in queries dir, create jobs and push job ids to stack
 # for query in queries/*.soql; do
