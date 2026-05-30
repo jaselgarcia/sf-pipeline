@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
+source $REAL_PATH/config
 
 init_token() {
-	local SF_TOKEN=$(sf org display -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
-	sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
+	local SF_TOKEN=$(sf org auth show-access-token -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
+    if [ -f "$REAL_PATH/.env" ]; then
+        sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
+    else
+        echo "SF_TOKEN=$SF_TOKEN" > $REAL_PATH/.env
+    fi
 }
 
 hrs_elapsed() {
@@ -12,6 +17,10 @@ hrs_elapsed() {
 	echo $(( seconds_elapsed / 3600 ))
 }
 
+if [ ! -f "$REAL_PATH/.env" ]; then
+	printf "$PRINTFMT" "API Token missing. Creating: "
+    time init_token
+fi 
 
 # Refresh token if inactive for over two hours
 if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
@@ -20,7 +29,6 @@ if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
 fi
 
 source $REAL_PATH/.env
-source $REAL_PATH/config
 declare -a job_stack
 declare -a job_state
 job_state=(
