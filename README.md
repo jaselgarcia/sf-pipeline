@@ -15,6 +15,7 @@ It will build off of our inital work with forking out to curl via the URJ and IL
 - libcurl
 - Net:Curl::Easy
 - Perl JSON module
+- Salesforce CLI 2.136.8 and newer
 
 ## Scripts
 - ~~**add-duplicate-info:** *very* specific script for one work-realted use case. Would look to refactor into something more generally useful.~~
