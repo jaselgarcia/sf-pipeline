@@ -2,7 +2,6 @@
 
 use strict; use warnings;
 use Net::Curl::Easy qw(:constants);
-use Data::Dumper;
 use JSON;
 use constant {
 	VERSION => "66.0",
