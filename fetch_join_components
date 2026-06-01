@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
+source $REAL_PATH/config
 
 init_token() {
 	local SF_TOKEN=$(sf org display -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
@@ -12,6 +13,12 @@ hrs_elapsed() {
 	echo $(( seconds_elapsed / 3600 ))
 }
 
+usage() {
+	echo "usage: $0 <file: soql query>..." >&2
+	echo "$2" >&2
+	exit $1
+		
+}
 
 # Refresh token if inactive for over two hours
 if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
@@ -20,7 +27,6 @@ if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
 fi
 
 source $REAL_PATH/.env
-source $REAL_PATH/config
 declare -a job_stack
 declare -a job_state
 job_state=(
@@ -31,19 +37,20 @@ job_state=(
 	"Failed"
 )
 
+# Exit with error unless script arguments exist in queries dir
+for arg in "$@"; do 
+	if [ ! -f "$REAL_PATH/queries/$arg.soql" ]; then
+		usage 1 "$arg.soql not found in $REAL_PATH/queries"
+	fi
+done
 
 # Loop over SOQL queries in queries dir, create jobs and push job ids to stack
-# for query in queries/*.soql; do
-	# printf "$PRINTFMT" "Creating query job with $query: " 
-	# time curr_id=$($REAL_PATH/create_query.pl $SF_TOKEN $query)
-	# job_stack+=$curr_id
-# done
-
-job_stack=(
-	"750Tw00000dk6lWIAQ"
-	"750Tw00000djy9fIAA"
-	"750Tw00000djtukIAA"
-)
+for arg in "$@"; do
+	query="$REAL_PATH/queries/$arg.soql"
+	printf "$PRINTFMT" "Creating query job with ${query#$REAL_PATH}: " 
+	time curr_id=$($REAL_PATH/create_query.pl $SF_TOKEN $query)
+	job_stack+=$curr_id
+done
 
 # Check each id in stack and test exit code to determine whether to download results
 while true; do
