@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 TIMEFORMAT=$'%Rs'
-SPACING=80
+SPACING=104
 PRINTFMT="%-${SPACING}s"
 HEADERS=(
 	"Account ID"

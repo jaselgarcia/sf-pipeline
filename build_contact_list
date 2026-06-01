@@ -4,9 +4,9 @@ REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs d
 source $REAL_PATH/config
 
 printf "$PRINTFMT" "Breaking up 'Other emails' field: "
-time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | vstack -d "," 14 $(seq -s " " 1 11) 13 |
-	paste -d "," - <( sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | 
-	vstack -d "," 12  | tail +2 | sed 's/"//g' | 
+time (sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" | sort -r | uniq | vstack -d "," 14 $(seq -s " " 1 11) 13 |
+	paste -d "," - <( sub_newline "" "$REAL_PATH/.data/join-components/contact-join.src.csv" |
+	sort -r | uniq | vstack -d "," 12  | tail +2 | sed 's/"//g' | 
 	pad_commas "Other emails") > "$REAL_PATH/.data/join-components/contact-join.csv")
 
 printf "$PRINTFMT" "Counting duplicate emails and saving to file: "
@@ -30,17 +30,17 @@ time (vlookup -m "$REAL_PATH/.data/duplicate-name.csv" 1 1 < <(vstack -d " " 6 8
 	sort -t , -k 1,1 > "$REAL_PATH/.data/counted-contact.2.csv")
 
 printf "$PRINTFMT" "Join account info: "
-time (sub_newline "$REAL_PATH/.data/join-components/acct-join.src.csv" |
+time (sub_newline "$REAL_PATH/.data/join-components/acct-join.src.csv" | sort -r | uniq |
 	tail +2 | sort -t , -k 1,1 > "$REAL_PATH/.data/join-components/acct-join.csv" &&
 	join -t , -a 1 "$REAL_PATH/.data/counted-contact.2.csv" "$REAL_PATH/.data/join-components/acct-join.csv" |
 	sort -t , -k 2,2 > "$REAL_PATH/.data/counted-contact-acct.csv")
 
 printf "$PRINTFMT" "Join affiliation data with account info: "
-time (sub_newline "$REAL_PATH/.data/join-components/contact-affiliation.join.src.csv" | tail +2 | sort -t , -k 2,2 |
-	join -t , -1 2 - "$REAL_PATH/.data/join-components/acct-join.csv" > "$REAL_PATH/.data/join-components/contact-affiliation.join.csv")
+time (sub_newline "$REAL_PATH/.data/join-components/affiliation-join.src.csv" | sort -r | uniq | tail +2 | sort -t , -k 2,2 |
+	join -t , -1 2 - "$REAL_PATH/.data/join-components/acct-join.csv" > "$REAL_PATH/.data/join-components/affiliation.join.csv")
 
 printf "$PRINTFMT" "Join affiliation data to contact list: "
-time (sort -t , -k 2,2 "$REAL_PATH/.data/join-components/contact-affiliation.join.csv" | 
+time (sort -t , -k 2,2 "$REAL_PATH/.data/join-components/affiliation.join.csv" | 
 	join -t , -a 1 -j 2 "$REAL_PATH/.data/counted-contact-acct.csv" - |
 	pad_commas > "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
 

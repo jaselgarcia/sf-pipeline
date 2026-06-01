@@ -2,7 +2,7 @@
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 source $REAL_PATH/config
-SLEEP=3.15
+SLEEP=4.5
 
 init_token() {
 	local SF_TOKEN=$(sf org auth show-access-token -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
@@ -31,20 +31,28 @@ if [ ! -f "$REAL_PATH/.env" ]; then
 fi 
 
 # Refresh token if inactive for over two hours
-if (( $(hrs_elapsed $(stat --printf "%X" .env) $(date +"%s")) > 2 )); then
+if (( $(hrs_elapsed $(stat --printf "%X" "$REAL_PATH/.env") $(date +"%s")) > 2 )); then
 	printf "$PRINTFMT" "API Token expired. Refreshing: "
 	time init_token	
 fi
 
-source $REAL_PATH/.env
+source "$REAL_PATH/.env"
 declare -a job_stack
 declare -a job_state
+declare -A query_map
+
 job_state=(
 	"JobComplete"
 	"InProgress"
 	"UploadComplete"
 	"Aborted"
 	"Failed"
+)
+
+query_map=(
+	[Contact]="contact-join"
+	[Account]="acct-join"
+	[npe5__Affiliation__c]="affiliation-join"
 )
 
 # Exit with error unless script arguments exist in queries dir
@@ -58,7 +66,7 @@ done
 for arg in "$@"; do
 	query="$REAL_PATH/queries/$arg.soql"
 	printf "$PRINTFMT" "Creating query job with ${query#$REAL_PATH}: " 
-	time curr_id=$($REAL_PATH/create_query.pl $SF_TOKEN $query)
+	time curr_id=$("$REAL_PATH/create_query.pl" $SF_TOKEN $query)
 	job_stack+=( "$curr_id" )
 done
 
@@ -67,14 +75,16 @@ while true; do
 	limit=${#job_stack[@]}
 
 	for (( i=0; i < $limit; i++ )); do
-		printf "$PRINTFMT" "Checking job "${job_stack[$i]}": "
-		time name=$($REAL_PATH/check_status.pl $SF_TOKEN "${job_stack[$i]}") 
+		printf "$PRINTFMT" "Checking job ${job_stack[$i]}: "
+		time obj_type=$($REAL_PATH/check_status.pl $SF_TOKEN ${job_stack[$i]}) 
 		exit_code=$?
 
 		echo -e "\tJob state is ${job_state[$exit_code]}"  
 		if [ $exit_code -eq 0 ]; then
-			printf "\t${PRINTFMT/$SPACING/$(( SPACING - 8 ))}" "Downloading $name query:"
-			time unset 'job_stack[i]'
+			file="$REAL_PATH/.data/join-components/${query_map[$obj_type]}.src.csv"
+			printf "\t${PRINTFMT/$SPACING/$(( SPACING - 8 ))}" "Saving $obj_type query results to ${file#$REAL_PATH/}: "
+			time ("$REAL_PATH/fetch_results.pl" $SF_TOKEN ${job_stack[$i]} > "$file")
+			unset 'job_stack[i]'
 		fi
 	done
 
@@ -86,5 +96,3 @@ while true; do
 	temp_arr=( ${job_stack[@]} ) && job_stack=( ${temp_arr[@]} )
 	sleep $SLEEP
 done
-
-echo "Broke out of loop."

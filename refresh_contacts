@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
+source $REAL_PATH/config
+
+message=" Fetching all contact list components "
+buffer_length=$(( (SPACING + 6 - ${#message}) / 2 ))
+printf -v buffer "%${buffer_length}s"
+printf "%s%s%s\n" "${buffer// /=}" "$message" "${buffer// /=}"
+
+"$REAL_PATH/fetch_join_components" affiliations contacts accounts
+
+message=" Rebuilding contact list  "
+buffer_length=$(( (SPACING + 6 - ${#message}) / 2 ))
+printf -v buffer "%${buffer_length}s"
+printf "\n%s%s%s\n" "${buffer// /=}" "$message" "${buffer// /=}"
+
+"$REAL_PATH/build_contact_list"
