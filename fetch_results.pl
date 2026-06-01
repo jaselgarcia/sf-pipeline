@@ -48,7 +48,7 @@ usage unless scalar @ARGV == 2;
 
 # Comma notation required to maintain module constants
 %options = (
-	CURLOPT_URL, "${\BASE_URL}/services/data/v${\VERSION}/jobs/query/$ARGV[1]/results?maxRecords=10000", 
+	CURLOPT_URL, "${\BASE_URL}/services/data/v${\VERSION}/jobs/query/$ARGV[1]/results", 
 	CURLOPT_HTTPHEADER,  \@headers,
 	CURLOPT_WRITEDATA, \$response_body,
 	CURLOPT_HEADERDATA, \$response_headers,
@@ -66,10 +66,11 @@ while ( chomp($locator = return_locator) ) {
 	last if $locator eq "null";
 
 	# Refactor to one line?
-	if ($options{${\CURLOPT_URL}} =~ /&locator=.+$/ ) {
-		$options{${\CURLOPT_URL}} =~ s/locator=.+$/locator=$locator/;
+	if ($options{${\CURLOPT_URL}} =~ /[?&]locator=.+$/ ) {
+		$options{${\CURLOPT_URL}} =~ s/locator=[^&]+/locator=$locator/;
 	} else {
-		$options{${\CURLOPT_URL}} .= "&locator=$locator";
+		my $delim = $options{${\CURLOPT_URL}} =~ /\?/ ? "&" : "?";
+		$options{${\CURLOPT_URL}} .= "${delim}locator=$locator";
 	}
 
 	# Open up response variables for reassignment
