@@ -2,6 +2,7 @@
 
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 source $REAL_PATH/config
+SLEEP=3.15
 
 init_token() {
 	local SF_TOKEN=$(sf org auth show-access-token -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
@@ -58,7 +59,7 @@ for arg in "$@"; do
 	query="$REAL_PATH/queries/$arg.soql"
 	printf "$PRINTFMT" "Creating query job with ${query#$REAL_PATH}: " 
 	time curr_id=$($REAL_PATH/create_query.pl $SF_TOKEN $query)
-	job_stack+=$curr_id
+	job_stack+=( "$curr_id" )
 done
 
 # Check each id in stack and test exit code to determine whether to download results
@@ -66,8 +67,8 @@ while true; do
 	limit=${#job_stack[@]}
 
 	for (( i=0; i < $limit; i++ )); do
-		printf "$PRINTFMT" "Checking job ${job_stack[$i]}: "
-		time name=$($REAL_PATH/check_status.pl $SF_TOKEN ${job_stack[$i]}) 
+		printf "$PRINTFMT" "Checking job "${job_stack[$i]}": "
+		time name=$($REAL_PATH/check_status.pl $SF_TOKEN "${job_stack[$i]}") 
 		exit_code=$?
 
 		echo -e "\tJob state is ${job_state[$exit_code]}"  
@@ -83,7 +84,7 @@ while true; do
 
 	# Still jobs in the stack. Remove empty indices and sleep before next check
 	temp_arr=( ${job_stack[@]} ) && job_stack=( ${temp_arr[@]} )
-	sleep 3
+	sleep $SLEEP
 done
 
 echo "Broke out of loop."
