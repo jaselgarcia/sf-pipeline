@@ -22,8 +22,9 @@ usage() {
 	echo "usage: $0 <file: soql query>..." >&2
 	echo "$2" >&2
 	exit $1
-		
 }
+
+[ ! -d "$REAL_PATH/.data/join-components" ] && mkdir -p "$REAL_PATH/.data/join-components"
 
 if [ ! -f "$REAL_PATH/.env" ]; then
 	printf "$PRINTFMT" "API Token missing. Creating: "
