@@ -7,7 +7,7 @@ SLEEP=4.5
 init_token() {
 	local SF_TOKEN=$(sf org auth show-access-token -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
 	if [ -f "$REAL_PATH/.env" ]; then
-		sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" .env
+		sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" "$REAL_PATH/.env"
 	else
 		echo "SF_TOKEN=$SF_TOKEN" > $REAL_PATH/.env
 	fi
