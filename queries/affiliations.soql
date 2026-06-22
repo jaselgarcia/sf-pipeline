@@ -1,6 +1,6 @@
 SELECT 
 	npe5__Contact__r.Id,
-	npe5__Organization__r.Account_ID__c,
+	npe5__Organization__r.Id,
 	Id,
 	npe5__Primary__c,
 	npe5__Role__c 
