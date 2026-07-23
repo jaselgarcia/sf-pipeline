@@ -6,7 +6,7 @@ SELECT
 	FirstName,
 	Middle_Name__c,
 	LastName,
-	Congregation__c,
+	Congregation__r.Name,
 	npe01__HomeEmail__c,
 	npe01__AlternateEmail__c,
 	npe01__WorkEmail__c,
