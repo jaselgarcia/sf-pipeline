@@ -32,7 +32,7 @@ if [ ! -f "$REAL_PATH/.env" ]; then
 fi 
 
 # Refresh token if inactive for over two hours
-if (( $(hrs_elapsed $(stat --printf "%X" "$REAL_PATH/.env") $(date +"%s")) > 2 )); then
+if (( $(sf org display -o jaselg@reform.org.il --json | jq -j '.status') != 0 )); then
 	printf "$PRINTFMT" "API Token expired. Refreshing: "
 	time init_token	
 fi
