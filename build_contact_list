@@ -29,11 +29,11 @@ time (vlookup -m "$REAL_PATH/.data/duplicate-name.csv" 1 1 < <(vstack -d " " 6 8
 	paste -d "," - "$REAL_PATH/tmp" < "$REAL_PATH/.data/counted-contact.1.csv" |
 	sort -t , -k 1,1 > "$REAL_PATH/.data/counted-contact.2.csv")
 
-printf "$PRINTFMT" "Creating email regex lookup: "
-time (vstack -td "|" $(seq -s " " 10 12) $(seq -s " " 14 17) < "$REAL_PATH/.data/counted-contact.2.csv" | 
+printf "$PRINTFMT" "Creating email lookup: "
+time (vstack -tud "|" $(seq -s " " 10 12) $(seq -s " " 14 17) < "$REAL_PATH/.data/counted-contact.2.csv" | 
 	sed "s/|$//" | paste -d "," - <(vstack -d "," 18 19 < "$REAL_PATH/.data/counted-contact.2.csv") | 
-	"$REAL_PATH/prepare_email_regex" > "$REAL_PATH/tmp" && 
-	cat <(echo "Email Regex,Email Records,Email Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/email-regex.csv")
+	"$REAL_PATH/prepare_email_lookup" > "$REAL_PATH/tmp" && 
+	cat <(echo "Email,Max Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/email-regex.csv")
 
 printf "$PRINTFMT" "Join account info: "
 time (sub_newline "$REAL_PATH/.data/join-components/acct-join.src.csv" | sort -r | uniq |

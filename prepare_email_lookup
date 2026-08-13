@@ -1,0 +1,31 @@
+#!/usr/bin/env perl
+
+use strict; use warnings;
+use Data::Dumper;
+
+my $email_hash;
+
+
+while (<stdin>) {
+	chomp $_;
+	my ($email_str, $email_count, $name_count) = split ",", $_;	
+	
+	my $max = $email_count > $name_count ? $email_count : $name_count;
+	my @email_arr = grep { /\S/ } split /\|/, $email_str;
+
+	# Skip empty lines with no emails
+	next unless @email_arr;
+
+	foreach my $email (@email_arr) {
+		$email_hash->{$email} = $max unless exists $email_hash->{$email} && $email_hash->{$email} > $max;
+	}
+
+
+	# printf "%s\n", join "\t", @email_arr if @email_arr;
+}	
+
+while (my ($email, $count)  = each (%{$email_hash})) {
+	printf "%s,%s\n", $email, $count;
+}
+
+# die scalar keys %{$email_hash};
