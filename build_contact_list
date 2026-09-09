@@ -58,4 +58,4 @@ time (cat <(echo "$CONTACT_HEADERS") "$REAL_PATH/.data/counted-contact.2.csv" > 
 	cat <(echo "$CONTACT_ACCT_AFF_HEADERS") "$REAL_PATH/.data/counted-contact-acct-affiliation.csv" > "$REAL_PATH/tmp" &&
 	mv "$REAL_PATH/tmp" "$REAL_PATH/.data/counted-contact-acct-affiliation.csv")
 
-"$REAL_PATH/count_donations"
+"$REAL_PATH/index_donations_update_sp"

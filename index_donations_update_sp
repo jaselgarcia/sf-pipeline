@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
+
+source $REAL_PATH/config
+source $REAL_PATH/.env
+
+env_vars=(
+	"DONATIONS"
+	"DONATION_EMAIL_IDX"
+	"CONTACTS"
+)
+
+# Check all env variable exist and point to valid files
+for env_var in "${env_vars[@]}"; do
+	[[ ! -n "${!env_var}" ]] && echo "Valid $env_var env variable required." >&2
+	[[ ! -f "${!env_var}" ]] && echo "$env_var not a valid file" >&2
+done
+
+printf "$PRINTFMT" "Cross-referencing donation list against duplicate email info: "
+time (vlookup -lm "$REAL_PATH/.data/email-regex.csv" 1 20 < <(tail +2 "$DONATIONS") | 
+	cat <(echo "Donation List Index, Max Records") - > "$REAL_PATH/.data/indexed-email-count.csv" &&
+	cp "$REAL_PATH/.data/indexed-email-count.csv" "$DONATION_EMAIL_IDX")
