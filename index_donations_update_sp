@@ -8,6 +8,7 @@ source $REAL_PATH/.env
 env_vars=(
 	"DONATIONS"
 	"DONATION_EMAIL_IDX"
+	"DONATION_NAME_IDX"
 	"CONTACTS"
 )
 
@@ -21,5 +22,11 @@ printf "$PRINTFMT" "Cross-referencing donation list against duplicate email info
 time (vlookup -lm "$REAL_PATH/.data/email-regex.csv" 1 20 < <(tail +2 "$DONATIONS") | 
 	cat <(echo "Donation List Index, Max Records") - > "$REAL_PATH/.data/indexed-email-count.csv" &&
 	cp "$REAL_PATH/.data/indexed-email-count.csv" "$DONATION_EMAIL_IDX")
+
+printf "$PRINTFMT" "Cross-referencing donation list against duplicate name info: "
+time (vlookup -lm "$REAL_PATH/.data/name-regex.csv" 1 1 < <(vstack -td " " 10 12 < <(tail +2 "$DONATIONS") |
+	sed 's/"//; s/\(.*\)"$/"\1"/') |
+	cat <(echo "Donation List Index, Max Records") - > "$REAL_PATH/.data/indexed-name-count.csv" &&
+	cp "$REAL_PATH/.data/indexed-name-count.csv" "$DONATION_NAME_IDX")
 
 cp "$REAL_PATH/.data/counted-contact-acct-affiliation.csv" "$CONTACTS"

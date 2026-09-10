@@ -35,6 +35,12 @@ time (vstack -tud "|" $(seq -s " " 10 12) $(seq -s " " 14 17) < "$REAL_PATH/.dat
 	"$REAL_PATH/prepare_email_lookup" > "$REAL_PATH/tmp" && 
 	cat <(echo "Email,Max Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/email-regex.csv")
 
+printf "$PRINTFMT" "Creating name lookup: "
+time (vstack -tud "##" 6 8 < "$REAL_PATH/.data/counted-contact.2.csv" |
+	paste -d "%" - <(vstack -d "%" 18 19 < "$REAL_PATH/.data/counted-contact.2.csv") |
+	"$REAL_PATH/prepare_name_lookup" > "$REAL_PATH/tmp" &&
+	cat <(echo "Full Name,Max Records") "$REAL_PATH/tmp" > "$REAL_PATH/.data/name-regex.csv")
+
 printf "$PRINTFMT" "Join account info: "
 time (sub_newline "$REAL_PATH/.data/join-components/acct-join.src.csv" | sort -r | uniq |
 	tail +2 | sort -t , -k 1,1 > "$REAL_PATH/.data/join-components/acct-join.csv" &&

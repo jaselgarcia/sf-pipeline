@@ -1,0 +1,32 @@
+#!/usr/bin/env perl
+
+use strict; use warnings;
+use Data::Dumper;
+
+my $name_hash;
+
+
+while (<stdin>) {
+	chomp $_;
+	my ($name_str, $email_count, $name_count) = split "%", $_;
+
+	my $max = $email_count > $name_count ? $email_count : $name_count;
+
+	$name_str =~ s/"//g;
+	$name_str =~ s/##/ /;
+	$name_str = qq("$name_str") if $name_str =~ /,/;
+
+	# Skip empty lines with no emails
+	next unless $name_str;
+
+	$name_hash->{$name_str} = $max unless exists $name_hash->{$name_str} && $name_hash->{$name_str} > $max;
+
+
+	# printf "%s\n", join "\t", @email_arr if @email_arr;
+}	
+
+while (my ($name, $count)  = each (%{$name_hash})) {
+	printf "%s,%s\n", $name, $count;
+}
+
+# die scalar keys %{$email_hash};
