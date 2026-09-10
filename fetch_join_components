@@ -5,11 +5,11 @@ source $REAL_PATH/config
 SLEEP=4.5
 
 init_token() {
-	local SF_TOKEN=$(sf org auth show-access-token -o jaselg@reform.org.il --json | jq -j '.result.accessToken')
-	if [ -f "$REAL_PATH/.env" ]; then
-		sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" "$REAL_PATH/.env"
+	local SF_TOKEN=$(sf org auth show-access-token -o "$SF_USER" --json | jq -j '.result.accessToken')
+	if [ -f "$REAL_PATH/.token" ]; then
+		sed -i "/SF_TOKEN/s/=.*/=$SF_TOKEN/" "$REAL_PATH/.token"
 	else
-		echo "SF_TOKEN=$SF_TOKEN" > $REAL_PATH/.env
+		echo "SF_TOKEN=$SF_TOKEN" > "$REAL_PATH/.token"
 	fi
 }
 
@@ -24,20 +24,25 @@ usage() {
 	exit $1
 }
 
+# Check for necessary files and directories
 [ ! -d "$REAL_PATH/.data/join-components" ] && mkdir -p "$REAL_PATH/.data/join-components"
 
 if [ ! -f "$REAL_PATH/.env" ]; then
-	printf "$PRINTFMT" "API Token missing. Creating: "
-	time init_token
+	echo "Required $REAL_PATH/.env file missing." >&2
+	exit 1
+else
+	source "$REAL_PATH/.env"
 fi 
 
+[ ! -f "$REAL_PATH/.token" ] && printf "$PRINTFMT" "API Token missing. Creating: " && time init_token
+
 # Refresh token if inactive for over two hours
-if (( $(sf org display -o jaselg@reform.org.il --json | jq -j '.status') != 0 )); then
+if (( $(hrs_elapsed $(stat --printf "%X" "$REAL_PATH/.token") $(date +"%s")) > 2 )); then
 	printf "$PRINTFMT" "API Token expired. Refreshing: "
 	time init_token	
 fi
 
-source "$REAL_PATH/.env"
+source "$REAL_PATH/.token"
 declare -a job_stack
 declare -a job_state
 declare -A query_map
