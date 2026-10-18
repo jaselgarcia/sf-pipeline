@@ -30,6 +30,17 @@ for env_var in "${env_vars[@]:1}"; do
 	[[ ! -f "${!env_var}" ]] && echo "$env_var not a valid file" >&2 && exit 3
 done
 
+while getopts 'u' arg; do
+		case "$arg" in
+			u)
+				UPDATE=0
+				;;
+			* | ?)
+				UPDATE=1
+				;;
+		esac
+done
+
 message=" Fetching all contact list components "
 buffer_length=$(( (SPACING + 6 - ${#message}) / 2 ))
 printf -v buffer "%${buffer_length}s"
@@ -43,6 +54,8 @@ printf -v buffer "%${buffer_length}s"
 printf "\n%s%s%s\n" "${buffer// /=}" "$message" "${buffer// /=}"
 
 "$REAL_PATH/build_contact_list"
+
+if [ ! $UPDATE ]; then exit 0; fi
 
 message=" Updating indices  "
 buffer_length=$(( (SPACING + 6 - ${#message}) / 2 ))
