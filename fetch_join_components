@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
+# Loops through SOQL queries in required SOQL directory, passing each to Perl scripts that handle API requests.
+# This script isn't meant to be called directly, and assumes all the env variables that are used indeed exist.
+
 REAL_PATH=$(perl -MCwd='abs_path' -e 'printf "%s", abs_path("'"$0"'")' | xargs dirname)
 source $REAL_PATH/config
+source $REAL_PATH/.env
 SLEEP=4.5
 
 init_token() {
@@ -26,13 +30,6 @@ usage() {
 
 # Check for necessary files and directories
 [ ! -d "$REAL_PATH/.data/join-components" ] && mkdir -p "$REAL_PATH/.data/join-components"
-
-if [ ! -f "$REAL_PATH/.env" ]; then
-	echo "Required $REAL_PATH/.env file missing." >&2
-	exit 1
-else
-	source "$REAL_PATH/.env"
-fi 
 
 [ ! -f "$REAL_PATH/.token" ] && printf "$PRINTFMT" "API Token missing. Creating: " && time init_token
 
