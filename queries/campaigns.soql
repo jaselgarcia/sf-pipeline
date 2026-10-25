@@ -1,0 +1,6 @@
+SELECT 
+	Id, 
+	Name 
+FROM Campaign 
+WHERE Campaign.Impj__c = TRUE 
+AND IsActive = TRUE

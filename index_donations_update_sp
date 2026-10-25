@@ -17,3 +17,4 @@ time (vlookup -lm "$REAL_PATH/.data/name-regex.csv" 1 1 < <(vstack -td " " 10 12
 	cp "$REAL_PATH/.data/indexed-name-count.csv" "$DONATION_NAME_IDX")
 
 cp "$REAL_PATH/.data/counted-contact-acct-affiliation.csv" "$CONTACTS"
+cp "$REAL_PATH/.data/join-components/campaign-join.src.csv" "$CAMPAIGNS"
